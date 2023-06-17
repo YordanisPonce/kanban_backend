@@ -18,7 +18,7 @@ class BoardController extends Controller
     public function index(Request $request)
     {
         try {
-            $boards = $request->user()->boards;
+            $boards = $request->user()->boards()->withCount('users')->get();
 
             return response()->json([
                 'success' => true,
@@ -57,10 +57,17 @@ class BoardController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
-            Board::destroy($id);
+            $board = Board::findOrfail($id);
+            if ($board->user->id != $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usted no tiene permisos para borrar esta tarea'
+                ], $this->badRequestCode);
+            }
+            $board->delete();
             return response()->json([
                 'success' => true,
                 'message' => 'Tablero eliminado exitosamente'
